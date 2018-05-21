@@ -14,6 +14,7 @@ def CsvReader(file):
 	    result[item[0]] = item[1]
 
 	csvFile.close()
+	print 'read done'
 	return result
 
 def CsvWriter(file,result):
@@ -30,4 +31,5 @@ def CsvWriter(file,result):
 		writer.writerow(res);
 
 	csvFile.close();
+	print 'write done'
 	pass 
