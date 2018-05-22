@@ -14,15 +14,7 @@ def modifyData(result,interSec):
 	print 'modify data done'
 	return resultUse
 
-def MacdCalc():
-	
-	# read from csv
-	result = CsvReader("data.csv");
-
-	# modify result
-	interSec = 60;
-	resultUse = modifyData(result,interSec);
-	#print resultUse
+def MacdCalc(resultUse,interSec):
 
 	# find min key
 	minKey = min(resultUse.keys());
@@ -90,7 +82,21 @@ def MacdCalc():
 	
 
 def btcControl():
-	resultMacd = MacdCalc()
+
+	# read from csv
+	result = CsvReader("data.csv");
+
+	# modify result
+	interSec = 60;
+	resultUse = modifyData(result,interSec);
+
+	resultMacd = MacdCalc(resultUse,interSec);
+	
+	moneyAmount = 10000;
+	buySellState = 0;
+
+	
+
 
 
 
