@@ -1,5 +1,6 @@
 from CsvRead import CsvReader
 from CsvRead import CsvWriter
+from CsvRead import TextWriter
 
 
 def modifyData(result):
@@ -97,7 +98,7 @@ def MacdSeconline(lastresult,result):
 
 	LastDayEma12 = lastresult['ema12'];
 	LastDayEma26 = lastresult['ema26'];
-	LastDea = lastresult['dea'];
+	LastDayDea = lastresult['dea'];
 	LastPrice = lastresult['price'];
 
 	resultMacd = {};
@@ -106,7 +107,7 @@ def MacdSeconline(lastresult,result):
 	resultMacd['ema12'] = LastPrice + (price - LastPrice)*2/13;
 	resultMacd['ema26'] = LastPrice + (price - LastPrice)*2/27;
 	resultMacd['diff'] = resultMacd['ema12'] - resultMacd['ema26'] ;
-	resultMacd['dea'] = LastDea*8/10 + resultMacd['diff'] *2/10 ;
+	resultMacd['dea'] = LastDayDea*8/10 + resultMacd['diff'] *2/10 ;
 	resultMacd['macd'] = 2 * (resultMacd['diff'] - resultMacd['dea']);
 	
 	return resultMacd
@@ -115,7 +116,7 @@ def MacdNomalCalc(lastresult,result):
 
 	LastDayEma12 = lastresult['ema12'];
 	LastDayEma26 = lastresult['ema26'];
-	LastDea = lastresult['dea'];
+	LastDayDea = lastresult['dea'];
 	LastPrice = lastresult['price'];
 
 	resultMacd = {};
@@ -139,6 +140,75 @@ def TradeSimu():
 
 	# modify result
 	resultUse = modifyData(result);
+
+	# get start time
+	startTime = min(resultUse.keys());
+
+	TimeNow = startTime;
+
+	TimeInter = 60;
+	Time15Min = 60*15;
+	Time30Min = 60*30;
+	Time1Hour = 60*60;
+	Time4Hour = 60*60*4;
+	Time1Day = 60*60*24;
+
+	Macd1Min = {};
+	BuyState = 0;
+	moneyAmount = 10000;
+	BtcBuyAmount = 0;
+
+	TimeInter = TimeInter;
+
+	while 1:
+		if 	resultUse.has_key(TimeNow) == 0:
+			break
+
+		Macd1Min[TimeNow] = {};
+		if TimeNow-startTime<TimeInter:
+			Macd1Min[TimeNow] = MacdHead(resultUse[TimeNow]);
+		elif TimeNow-startTime<TimeInter*2:
+			Macd1Min[TimeNow] = MacdSeconline(Macd1Min[TimeNow-TimeInter],resultUse[TimeNow]);
+		else:
+			Macd1Min[TimeNow] = MacdNomalCalc(Macd1Min[TimeNow-TimeInter],resultUse[TimeNow]);
+
+			if (TimeNow-TimeInter)%TimeInter == 0:
+
+				if Macd1Min[TimeNow-TimeInter]['macd'] < 0 and Macd1Min[TimeNow]['macd'] > 0 and BuyState == 0:
+					BuyState = 1;
+					buymoney = 0.5*moneyAmount
+					BtcBuyAmount += buymoney/Macd1Min[TimeNow]['price'];
+					moneyAmount -=  buymoney;
+
+					TextWriter('log.txt','we buy btc at time '+str(TimeNow)+ ' at price '+ str(Macd1Min[TimeNow]['price']));
+					TextWriter('log.txt','we have money '+str(moneyAmount));
+					TextWriter('log.txt','we have btc '+str(BtcBuyAmount));
+
+				elif Macd1Min[TimeNow-TimeInter]['macd'] > 0 and Macd1Min[TimeNow]['macd'] < 0 and BuyState == 1:
+					BuyState = 0;
+					moneyAmount += BtcBuyAmount* Macd1Min[TimeNow]['price'];
+					BtcBuyAmount = 0;
+					TextWriter('log.txt','we sell btc at time '+str(TimeNow)+ ' at price '+ str(Macd1Min[TimeNow]['price']));
+					TextWriter('log.txt','we have money '+str(moneyAmount));
+					TextWriter('log.txt','we have btc '+str(BtcBuyAmount));
+
+				
+
+
+
+		pass
+
+		#print Macd1Min[TimeNow];
+		#TextWriter('log.txt',str(TimeNow)+str(Macd1Min[TimeNow]));
+
+		TimeNow = TimeNow + 60;
+
+
+
+	pass
+
+	print moneyAmount
+
 
 	
 	#resultMacd = MacdCalc(resultUse,60);
