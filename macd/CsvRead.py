@@ -33,3 +33,17 @@ def CsvWriter(file,result):
 	csvFile.close();
 	print 'write done'
 	pass 
+
+def TextWriter(file,result):
+
+	textFile = open(file, "a")
+	
+	textFile.write(result);
+
+	textFile.write('\n');
+
+	textFile.close();
+	
+	#print 'write done'
+	
+	pass 
