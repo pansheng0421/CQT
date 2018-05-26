@@ -1,0 +1,4 @@
+
+python CoinCounter.py
+
+pause
