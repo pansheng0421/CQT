@@ -3,6 +3,7 @@ from CsvRead import CsvWriter
 from CsvRead import TextWriter
 
 
+
 def modifyData(result):
 	
 	interSec = 60;
@@ -131,6 +132,106 @@ def MacdNomalCalc(lastresult,result):
 	return resultMacd
 
 
+def CheckBuySignal(Macd30Min,TimeNow,TimeInter):
+	if Macd30Min[TimeNow-TimeInter]['macd'] < 0 :
+		if Macd30Min[TimeNow]['macd'] > 0 :
+			return 1
+	else:
+		return 0
+
+def CheckSellSignal(Macd30Min,TimeNow,TimeInter):
+	if Macd30Min[TimeNow-TimeInter]['macd'] > 0 :
+		if Macd30Min[TimeNow]['macd'] < 0 :
+			return 1
+	else:
+		return 0
+
+def OpenBuyBill(AccountState,BuyBill,price,time):
+	TextWriter('log.txt','OpenBuyTime:'+str(time));
+	
+	AccountState['BuyState']=1;
+	buycoin = min(AccountState['CoinAmount']*0.5,0.5);
+	AccountState['CoinAmount'] -= buycoin;
+	BuyBill['OpenPrice'] = price;
+	BuyBill['CoinAmount'] = buycoin;
+
+	TextWriter('log.txt','OpenPrice:'+str(price));
+	TextWriter('log.txt','CoinAmount:'+str(AccountState['CoinAmount']+BuyBill['CoinAmount']));
+	TextWriter('log.txt','-'*25);
+
+	return AccountState,BuyBill
+
+def CloseBuyBill(AccountState,BuyBill,price,time):
+
+	TextWriter('log.txt','CloseBuyTime:'+str(time));
+	AccountState['BuyState']=0;
+	
+	closeprice = price;
+	
+	# boom
+	if (closeprice/BuyBill['OpenPrice']-1)*20 <= -1:
+		Gain = -BuyBill['CoinAmount'];
+	else :
+		Gain = (closeprice/BuyBill['OpenPrice']-1)*BuyBill['CoinAmount']*BuyBill['Rate'];
+	TextWriter('log.txt','Gain:'+str(Gain));
+
+	AccountState['CoinAmount'] += Gain+BuyBill['CoinAmount'];
+
+	BuyBill['OpenPrice'] = 0;
+	BuyBill['CoinAmount'] = 0;
+	
+	
+	TextWriter('log.txt','ClosePrice:'+str(price));
+	TextWriter('log.txt','CoinAmount:'+str(AccountState['CoinAmount']));
+	TextWriter('log.txt','-'*25);
+
+	return AccountState,BuyBill
+
+
+def OpenSellBill(AccountState,SellBill,price,time):
+	TextWriter('log.txt','OpenSellTime:'+str(time));
+	
+	AccountState['SellState']=1;
+	buycoin = min(AccountState['CoinAmount']*0.5,0.5);
+	AccountState['CoinAmount'] -= buycoin;
+	SellBill['OpenPrice'] = price;
+	SellBill['CoinAmount'] = buycoin;
+
+	TextWriter('log.txt','OpenPrice:'+str(price));
+	TextWriter('log.txt','CoinAmount:'+str(AccountState['CoinAmount']+SellBill['CoinAmount']));
+	TextWriter('log.txt','-'*25);
+
+	return AccountState,SellBill
+
+def CloseSellBill(AccountState,SellBill,price,time):
+
+	TextWriter('log.txt','CloseSellTime:'+str(time));
+	AccountState['SellState']=0;
+	
+	closeprice = price;
+	
+	# boom
+	if (1-closeprice/SellBill['OpenPrice'])*20 <= -1:
+		Gain = -SellBill['CoinAmount'];
+	else :
+		Gain = (1-closeprice/SellBill['OpenPrice'])*SellBill['CoinAmount']*SellBill['Rate'];
+	TextWriter('log.txt','Gain:'+str(Gain));
+
+	AccountState['CoinAmount'] += Gain+SellBill['CoinAmount'];
+
+	SellBill['OpenPrice'] = 0;
+	SellBill['CoinAmount'] = 0;
+	
+	
+	TextWriter('log.txt','ClosePrice:'+str(price));
+	TextWriter('log.txt','CoinAmount:'+str(AccountState['CoinAmount']));
+	TextWriter('log.txt','-'*25);
+
+	return AccountState,SellBill
+
+
+
+
 
 
 def TradeSimu():
@@ -143,6 +244,8 @@ def TradeSimu():
 
 	# get start time
 	startTime = min(resultUse.keys());
+	startTime = 1517496840;
+
 
 	TimeNow = startTime;
 
@@ -153,61 +256,104 @@ def TradeSimu():
 	Time4Hour = 60*60*4;
 	Time1Day = 60*60*24;
 
-	Macd1Min = {};
-	BuyState = 0;
-	moneyAmount = 10000;
-	BtcBuyAmount = 0;
+	Macd30Min = {};
+	Macd15Min = {};
 
-	TimeInter = TimeInter;
+	TimeInter = Time15Min;
+
+	AccountState = {
+		'CoinAmount' : 1,
+		'SellState':0,
+		'BuyState':0,
+	}
+	BuyBill= {
+		'OpenPrice':0,
+		'CoinAmount':0,
+		'Rate':20
+	}
+	SellBill= {
+		'OpenPrice':0,
+		'CoinAmount':0,
+		'Rate':20
+	}
 
 	while 1:
 		if 	resultUse.has_key(TimeNow) == 0:
 			break
 
-		Macd1Min[TimeNow] = {};
-		if TimeNow-startTime<TimeInter:
-			Macd1Min[TimeNow] = MacdHead(resultUse[TimeNow]);
-		elif TimeNow-startTime<TimeInter*2:
-			Macd1Min[TimeNow] = MacdSeconline(Macd1Min[TimeNow-TimeInter],resultUse[TimeNow]);
-		else:
-			Macd1Min[TimeNow] = MacdNomalCalc(Macd1Min[TimeNow-TimeInter],resultUse[TimeNow]);
-
-			if (TimeNow-TimeInter)%TimeInter == 0:
-
-				if Macd1Min[TimeNow-TimeInter]['macd'] < 0 and Macd1Min[TimeNow]['macd'] > 0 and BuyState == 0:
-					BuyState = 1;
-					buymoney = 0.5*moneyAmount
-					BtcBuyAmount += buymoney/Macd1Min[TimeNow]['price'];
-					moneyAmount -=  buymoney;
-
-					TextWriter('log.txt','we buy btc at time '+str(TimeNow)+ ' at price '+ str(Macd1Min[TimeNow]['price']));
-					TextWriter('log.txt','we have money '+str(moneyAmount));
-					TextWriter('log.txt','we have btc '+str(BtcBuyAmount));
-
-				elif Macd1Min[TimeNow-TimeInter]['macd'] > 0 and Macd1Min[TimeNow]['macd'] < 0 and BuyState == 1:
-					BuyState = 0;
-					moneyAmount += BtcBuyAmount* Macd1Min[TimeNow]['price'];
-					BtcBuyAmount = 0;
-					TextWriter('log.txt','we sell btc at time '+str(TimeNow)+ ' at price '+ str(Macd1Min[TimeNow]['price']));
-					TextWriter('log.txt','we have money '+str(moneyAmount));
-					TextWriter('log.txt','we have btc '+str(BtcBuyAmount));
-
-				
+		
+		TimeInter = Time30Min;
+		# macd calc
+		if TimeNow == startTime:
+			# start macd
+			Macd30Min[TimeNow] = {};
+			Macd30Min[TimeNow] = MacdHead(resultUse[TimeNow]);
+			TextWriter('log30.txt',str(TimeNow)+str(Macd30Min[TimeNow]));
+		elif TimeNow == startTime+TimeInter:
+			Macd30Min[TimeNow] = {};
+			Macd30Min[TimeNow] = MacdSeconline(Macd30Min[TimeNow-TimeInter],resultUse[TimeNow]);
+			TextWriter('log30.txt',str(TimeNow)+str(Macd30Min[TimeNow]));
+		elif (TimeNow - startTime)/TimeInter > 1 and (TimeNow-startTime)%TimeInter == 0:
+			Macd30Min[TimeNow] = {};
+			Macd30Min[TimeNow] = MacdNomalCalc(Macd30Min[TimeNow-TimeInter],resultUse[TimeNow]); 
+			TextWriter('log30.txt',str(TimeNow)+str(Macd30Min[TimeNow]));
 
 
+		TimeInter = Time15Min;
+		# macd calc
+		if TimeNow == startTime:
+			# start macd
+			Macd15Min[TimeNow] = {};
+			Macd15Min[TimeNow] = MacdHead(resultUse[TimeNow]);
+			TextWriter('log15.txt',str(TimeNow)+str(Macd15Min[TimeNow]));
+		elif TimeNow == startTime+TimeInter:
+			Macd15Min[TimeNow] = {};
+			Macd15Min[TimeNow] = MacdSeconline(Macd15Min[TimeNow-TimeInter],resultUse[TimeNow]);
+			TextWriter('log15.txt',str(TimeNow)+str(Macd15Min[TimeNow]));
+		elif (TimeNow - startTime)/TimeInter > 1 and (TimeNow-startTime)%TimeInter == 0:
+			Macd15Min[TimeNow] = {};
+			Macd15Min[TimeNow] = MacdNomalCalc(Macd15Min[TimeNow-TimeInter],resultUse[TimeNow]); 
+			TextWriter('log15.txt',str(TimeNow)+str(Macd15Min[TimeNow]));
+		
+		
+		
+		if len(Macd30Min.keys())>2 and Macd30Min.has_key(TimeNow):
+			# open buy bill
+			if CheckBuySignal(Macd30Min,TimeNow,Time30Min):
+				if AccountState['BuyState']==0:
+					(AccountState,BuyBill)=OpenBuyBill(AccountState,BuyBill,Macd30Min[TimeNow]['price'],TimeNow);
+			# open sell bill
+			if CheckSellSignal(Macd30Min,TimeNow,Time30Min):
+				if AccountState['SellState']==0:
+					(AccountState,SellBill)=OpenSellBill(AccountState,SellBill,Macd30Min[TimeNow]['price'],TimeNow);
+			
 
-		pass
 
-		#print Macd1Min[TimeNow];
-		#TextWriter('log.txt',str(TimeNow)+str(Macd1Min[TimeNow]));
+		if len(Macd15Min.keys())>2 and Macd15Min.has_key(TimeNow):			
+			# close buy bill
+			if CheckSellSignal(Macd15Min,TimeNow,Time15Min):
+				if AccountState['BuyState']==1:
+					(AccountState,BuyBill)=CloseBuyBill(AccountState,BuyBill,Macd15Min[TimeNow]['price'],TimeNow)
+			# close sell bill
+			if CheckBuySignal(Macd15Min,TimeNow,Time15Min):
+				if AccountState['SellState']==1:
+					(AccountState,SellBill)=CloseSellBill(AccountState,SellBill,Macd15Min[TimeNow]['price'],TimeNow)
+
+
+
+
+
+
+
+		if AccountState['CoinAmount']<0:
+			print TimeNow;			
+			break
+		#print Macd30Min[TimeNow];
+		
 
 		TimeNow = TimeNow + 60;
 
-
-
-	pass
-
-	print moneyAmount
+	print AccountState['CoinAmount'];
 
 
 	
