@@ -75,10 +75,65 @@ def CsvReader(file):
 	    result[item[0]]['num'] = float(item[1]);
 
 	csvFile.close()
-	print result
 	print 'read done'
 	return result
 	
+def CsvWriter(file,CoinAcount,totalmoney):
+
+	fileHeader = [
+		"symbol", 
+		"name",
+		"website_slug",
+		"price",
+		"num",
+		"totalmoney",
+		"moneypercent",
+		"percent_change_1h",
+		"percent_change_24h",
+		"percent_change_7d",
+		"rank",
+		"circulating_supply",
+		"total_supply",
+		"max_supply",
+		"volume_24h",
+		"market_cap",
+		"last_updated",
+	];
+
+	csvFile = open(file, "w")
+	writer = csv.writer(csvFile);
+
+	writer.writerow(fileHeader);
+
+	for key in CoinAcount:
+		res = [
+			CoinAcount[key]['symbol'], 
+			CoinAcount[key]['name'],
+			CoinAcount[key]['website_slug'],
+			CoinAcount[key]['price'],
+			CoinAcount[key]['num'],
+			CoinAcount[key]['totalmoney'],
+			CoinAcount[key]['moneypercent'],
+			CoinAcount[key]['percent_change_1h'],
+			CoinAcount[key]['percent_change_24h'],
+			CoinAcount[key]['percent_change_7d'],
+			CoinAcount[key]['rank'],
+			CoinAcount[key]['circulating_supply'],
+			CoinAcount[key]['total_supply'],
+			CoinAcount[key]['max_supply'],
+			CoinAcount[key]['volume_24h'],
+			CoinAcount[key]['market_cap'],
+			CoinAcount[key]['last_updated'],
+		];
+		writer.writerow(res);
+
+	res = [' ','totalmoney',':',totalmoney];
+	
+	writer.writerow(res);
+
+	csvFile.close();
+	print 'write done'
+	pass 
 
 def CoinCounter():
 
@@ -87,11 +142,26 @@ def CoinCounter():
 	res = getCoinDataFromWeb();
 	CoinData = modifyCoinData(res);
 	CoinAcount = CsvReader('data.csv');
-	for key in CoinAcount.keys():
+	for key in CoinAcount:
 		CoinId = CoinData[key]['id'];
 		CoinCurData = GetCoinData(CoinId);
 		CoinAcount[key].update(CoinCurData);
-		print CoinAcount[key]
+		CoinAcount[key]['totalmoney'] = CoinAcount[key]['price'] * CoinAcount[key]['num']; 
+
+	totalmoney = 0;
+	for key in CoinAcount:
+		totalmoney += CoinAcount[key]['totalmoney'] ;
+
+	print 'we have money :',
+	print totalmoney
+
+	for key in CoinAcount:
+		CoinAcount[key]['moneypercent'] =  CoinAcount[key]['totalmoney']/totalmoney;
+
+	CsvWriter('result.csv',CoinAcount,totalmoney);
+	
+
+
 
 
 
