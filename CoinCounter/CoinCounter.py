@@ -55,9 +55,9 @@ def modifyCoinData(res):
 	CoinData = {}
 	while len(resUse):
 		PreCoinData = resUse.pop();
-		key = str(PreCoinData['symbol']);
+		key = str(PreCoinData['name']);
 		CoinData[key] = {};
-		CoinData[key]['name'] = str(PreCoinData['name']);
+		CoinData[key]['symbol'] = str(PreCoinData['symbol']);
 		CoinData[key]['website_slug'] = str(PreCoinData['website_slug']);
 		CoinData[key]['id'] = int(PreCoinData['id']);
 
@@ -143,10 +143,15 @@ def CoinCounter():
 	CoinData = modifyCoinData(res);
 	CoinAcount = CsvReader('data.csv');
 	for key in CoinAcount:
-		CoinId = CoinData[key]['id'];
-		CoinCurData = GetCoinData(CoinId);
-		CoinAcount[key].update(CoinCurData);
-		CoinAcount[key]['totalmoney'] = CoinAcount[key]['price'] * CoinAcount[key]['num']; 
+		if 	CoinData.has_key(key):
+			CoinId = CoinData[key]['id'];
+			CoinCurData = GetCoinData(CoinId);
+			CoinAcount[key].update(CoinCurData);
+			CoinAcount[key]['totalmoney'] = CoinAcount[key]['price'] * CoinAcount[key]['num']; 
+		else :
+			print 'Error!',
+			print key,
+			print 'is not a key'
 
 	totalmoney = 0;
 	for key in CoinAcount:
