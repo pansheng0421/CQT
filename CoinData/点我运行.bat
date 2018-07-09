@@ -1,0 +1,4 @@
+
+python CoinData.py
+
+pause
