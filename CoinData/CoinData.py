@@ -97,6 +97,7 @@ def CsvWriter(file,CoinAcount):
 		"max_supply",
 		"volume_24h",
 		"market_cap",
+		"turnover_rate",
 		"last_updated",
 	];
 
@@ -106,26 +107,30 @@ def CsvWriter(file,CoinAcount):
 	writer.writerow(fileHeader);
 
 	for key in CoinAcount:
-		res = [
-			CoinAcount[key]['symbol'], 
-			CoinAcount[key]['name'],
-			CoinAcount[key]['website_slug'],
-			CoinAcount[key]['price'],
-			#CoinAcount[key]['num'],
-			#CoinAcount[key]['totalmoney'],
-			#CoinAcount[key]['moneypercent'],
-			CoinAcount[key]['percent_change_1h'],
-			CoinAcount[key]['percent_change_24h'],
-			CoinAcount[key]['percent_change_7d'],
-			CoinAcount[key]['rank'],
-			CoinAcount[key]['circulating_supply'],
-			CoinAcount[key]['total_supply'],
-			CoinAcount[key]['max_supply'],
-			CoinAcount[key]['volume_24h'],
-			CoinAcount[key]['market_cap'],
-			CoinAcount[key]['last_updated'],
-		];
-		writer.writerow(res);
+		if CoinAcount[key].has_key('symbol'):
+			res = [
+				CoinAcount[key]['symbol'], 
+				CoinAcount[key]['name'],
+				CoinAcount[key]['website_slug'],
+				CoinAcount[key]['price'],
+				#CoinAcount[key]['num'],
+				#CoinAcount[key]['totalmoney'],
+				#CoinAcount[key]['moneypercent'],
+				CoinAcount[key]['percent_change_1h'],
+				CoinAcount[key]['percent_change_24h'],
+				CoinAcount[key]['percent_change_7d'],
+				CoinAcount[key]['rank'],
+				CoinAcount[key]['circulating_supply'],
+				CoinAcount[key]['total_supply'],
+				CoinAcount[key]['max_supply'],
+				CoinAcount[key]['volume_24h'],
+				CoinAcount[key]['market_cap'],
+				CoinAcount[key]['turnover_rate'],
+				CoinAcount[key]['last_updated'],
+			];
+			writer.writerow(res);
+		else:
+			print CoinAcount[key]
 
 	#res = [' ','totalmoney',':',totalmoney];
 	
@@ -142,14 +147,20 @@ def CoinDataMain():
 	CoinData = modifyCoinData(res);
 
 	CoinAcount = {};
-	CoinAcount = CoinAcount.fromkeys(CoinData.keys());
+	#CoinAcount = CoinAcount.fromkeys(CoinData.keys());
 	
 	i = 0;
 	for key in CoinData:
 		CoinAcount[key] = {};
 		CoinId = CoinData[key]['id'];
 		CoinCurData = GetCoinData(CoinId);
-		CoinAcount[key].update(CoinCurData);
+		CoinAcount[key] = CoinCurData;
+		CoinAcount[key]['turnover_rate'] = CoinAcount[key]['volume_24h'] /  CoinAcount[key]['market_cap'];
+
+
+
+		#print CoinAcount[key]
+		#print CoinAcount[key]['symbol']
 		print key[0],
 		time.sleep(second);
 		i += 1;
@@ -157,6 +168,7 @@ def CoinDataMain():
 			break
 	
 	
+	#print CoinAcount
 	CsvWriter('result.csv',CoinAcount);
 	
 
