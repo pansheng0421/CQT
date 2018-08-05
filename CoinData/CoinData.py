@@ -41,7 +41,17 @@ def GetCoinData(CoinId):
 	CoinCurData['max_supply']=res['data']['max_supply'];
 	CoinCurData['price']=res['data']['quotes']['USD']['price'];
 	CoinCurData['volume_24h']=res['data']['quotes']['USD']['volume_24h'];
+	try:
+		CoinCurData['volume_24h'] = float(CoinCurData['volume_24h']);
+	except TypeError:
+		print 'TypeError';
+		CoinCurData['volume_24h'] = -1;
 	CoinCurData['market_cap']=res['data']['quotes']['USD']['market_cap'];
+	try:
+		CoinCurData['market_cap'] = float(CoinCurData['market_cap']);
+	except TypeError:
+		print 'TypeError';
+		CoinCurData['market_cap'] = -1;
 	CoinCurData['percent_change_1h']=res['data']['quotes']['USD']['percent_change_1h'];
 	CoinCurData['percent_change_24h']=res['data']['quotes']['USD']['percent_change_24h'];
 	CoinCurData['percent_change_7d']=res['data']['quotes']['USD']['percent_change_7d'];
@@ -153,6 +163,7 @@ def CoinDataMain():
 	for key in CoinData:
 		CoinAcount[key] = {};
 		CoinId = CoinData[key]['id'];
+		#print CoinId
 		CoinCurData = GetCoinData(CoinId);
 		CoinAcount[key] = CoinCurData;
 		CoinAcount[key]['turnover_rate'] = CoinAcount[key]['volume_24h'] /  CoinAcount[key]['market_cap'];
@@ -161,12 +172,13 @@ def CoinDataMain():
 
 		#print CoinAcount[key]
 		#print CoinAcount[key]['symbol']
-		print key[0],
+		print key
 		time.sleep(second);
+		'''
 		i += 1;
-		if i > 1:
+		if i > 10:
 			break
-	
+		'''
 	
 	#print CoinAcount
 	CsvWriter('result.csv',CoinAcount);
